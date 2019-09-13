@@ -50,12 +50,12 @@ public:
 class Receipt abstract
 {
 protected:
-	string header = "";
+	//string header = "";
 	const size_t number;
 	map<Item*, double> list;
 	double total = 0;
 public:
-	Receipt(string header, size_t number) :number(number), header(header) {}
+	Receipt(/*string header, */size_t number) :number(number)/*, header(header)*/ {}
 	void AddItem(Item* item)
 	{
 		list[item] += 1;
@@ -93,18 +93,20 @@ public:
 		}
 		else
 			cerr << "Error writing 'Receipts.txt'. Please contact your tech support." << endl;
+		return total;
 	}
 };
 
 class FiscalR : public Receipt
 {
 public:
-	FiscalR(string header, size_t number):Receipt(header, number){}
+	FiscalR(/*string header, */size_t number):Receipt(/*header, */number){}
 };
 
 class ReturnR : public Receipt
 {
 public:
+	ReturnR(/*string header, */size_t number) :Receipt(/*header, */number) {}
 	double Total()
 	{
 		for (auto item : list)
@@ -154,7 +156,7 @@ public:
 				getline(in, name);
 				in >> price >> dividible >> quantity;
 				Item* tmp = new Item(code, barcode, name, price, dividible);
-				items.insert({ code, {tmp,quantity} });
+				items.insert( { code, { tmp,quantity } } );
 			}
 		}
 	}
@@ -250,6 +252,14 @@ private:
 			cout << "Location: ";
 			getline(cin, location);
 			shopName = owner + "\n" + name + "\n" + location;
+			ofstream out("shop.txt");
+			if (out.is_open())
+			{
+				cout << shopName << endl;
+				cout << lastReceipt;
+			}
+			else
+				cerr << "Error writing 'shop.txt'. Please contact your tech support." << endl;
 		}
 	}
 	static Shop* instance;
