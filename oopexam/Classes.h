@@ -10,6 +10,41 @@
 
 using namespace std;
 
+static int dayMax[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+static string EnterDate()
+{
+	int year = 0, month = 0, day = 0;
+	do
+	{
+		cout << "Enter year: ";
+		cin >> year;
+		if (year < 1)
+			cout << "Invalid input. Try again." << endl;
+	} while (year < 1);
+	do
+	{
+		cout << "Enter month: ";
+		cin >> month;
+		if (month < 1 || month > 12)
+			cout << "Invalid input. Try again." << endl;
+	} while (month < 1 || month > 12);
+	int dayM = dayMax[month - 1];
+	if (year % 4 == 0)
+		dayM = 29;
+	do
+	{
+		cout << "Enter day: ";
+		cin >> day;
+		if (day < 1 || day > dayM)
+			cout << "Invalid input. Try again." << endl;
+	} while (day < 1 || day > dayM);
+	string result;
+	result.append(to_string(year));
+	result.append(to_string(month).size() == 1 ? "0" + to_string(month) : to_string(month));
+	result.append(to_string(day).size() == 1 ? "0" + to_string(day) : to_string(day));
+	return result;
+}
+
 static string Date()
 {
 	string date;
@@ -139,13 +174,6 @@ public:
 	{
 		list[item] -= quantity;
 	}
-	//double Total()
-	//{
-	//	cout << "ret" << endl;
-	//	for (auto item : list)
-	//		total += (item.first->GetPrice() * item.second);
-	//	return total;
-	//}
 };
 
 class Storage
@@ -259,7 +287,7 @@ public:
 	}
 	void Save()
 	{
-		ofstream out("storage1.txt");
+		ofstream out("storage.txt");
 		if (!out.is_open())
 		{
 			cerr << "Error. Can't open storage.txt." << endl;
@@ -335,12 +363,78 @@ public:
 			for (auto el : rec->GetList())
 			{
 				items[el.first->GetCode()].second -= el.second;
-				out << Date() << "\t" << rec->GetNumber() << "\t" << -el.second << "\t" << el.first->GetCode() << "\t" 
-					<< el.first->GetName() << "\t" << el.first->GetPrice() << endl;
+				out << Date() << "\t" << rec->GetNumber() << "\t" << el.first->GetCode() << "\t" 
+					<< el.first->GetPrice() << "\t"	<< -el.second << "\t" << el.first->GetName() << endl;
 			}
 		}
 		else
 			cerr << "Error writing 'Storage_movement.txt'. Please contact your tech support." << endl;
+	}
+	void PeriodInfo()
+	{
+		map<string, int> income;
+		map<string, int> outcome;
+		int quantity = 0;
+		string start = EnterDate();
+		string end = EnterDate();
+		string tmp;
+		if (start > end)
+		{
+			tmp = start;
+			start = end;
+			end = tmp;
+		}
+		string date;
+		ifstream in("Storage_movement.txt");
+		if (!in.is_open())
+			cerr << "Error. Records file is unavailable." << endl;
+		else
+		{
+			while (in.peek() != EOF)
+			{
+				in >> date;
+				cout << "date: " << date << endl;
+				if (date >= start)
+				{
+					while (in.peek() != EOF && date <= end)
+					{
+						//тут треба знов ≥н >> дате п≥сл€ першого круга... ѕ≈–≈–ќЅ»“»!
+						//in >> tmp >> tmp >> tmp >> tmp >> tmp;
+						in >> tmp;
+						cout << "tmp: " << tmp << endl;
+						in >> tmp;
+						cout << "tmp: " << tmp << endl;
+						in >> tmp;
+						cout << "tmp: " << tmp << endl;
+						in >> tmp;
+						cout << "tmp: " << tmp << endl;
+						in >> tmp;
+						cout << "tmp: " << tmp << endl;
+						quantity = stoi(tmp);
+						getline(in, tmp);
+						cout << "tmp: " << tmp << endl;
+						if (quantity > 0)
+							income[tmp] += quantity;
+						else
+							outcome[tmp] += quantity;
+					}
+				}
+				else
+				{
+					getline(in, tmp);
+				}
+
+			}
+			//system("cls");
+			cout << "Period report (" << start.substr(0,4) << "-" << start.substr(4,2) << "-" << start.substr(6) << " : ";
+			cout << end.substr(0,4) << "-" << end.substr(4,2) << "-" << end.substr(6) << ")" << endl;
+			cout << "Income:" << endl;
+			for (auto el : income)
+				cout << setw(5) << el.second << "\t" << el.second << endl;
+			cout << "Outcome:" << endl;
+			for (auto el : outcome)
+				cout << setw(5) << el.second << "\t" << el.second << endl;
+		}
 	}
 	~Storage()
 	{

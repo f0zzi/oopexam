@@ -38,17 +38,20 @@ int main()
 	//cout << s->GetItem(1)->GetName() << endl;
 	//s->AddItem();
 	//s->Save();
-	Shop* shop = Shop::GetInstance();
-	shop->OpenFiscalRec();
-	shop->GetRec()->AddItem(s->GetItem(1), 1);
-	shop->GetRec()->AddItem(s->GetItem(2), 2);
-	shop->GetRec()->AddItem(s->GetItem(2), 0.6);
-	shop->GetRec()->AddItem(s->GetItem(), 3);
-	cout << shop->GetRec()->Total() << endl;
 
-	shop->GetRec()->Show();
-	s->ParseReceipt(shop->GetRec());
-	shop->CloseRec();
+	Shop* shop = Shop::GetInstance();
+	//shop->OpenFiscalRec();
+	//shop->GetRec()->AddItem(s->GetItem(1), 1);
+	//shop->GetRec()->AddItem(s->GetItem(2), 2);
+	//shop->GetRec()->AddItem(s->GetItem(2), 0.6);
+	//shop->GetRec()->AddItem(s->GetItem(), 3);
+	//cout << shop->GetRec()->Total() << endl;
+
+	//shop->GetRec()->Show();
+	//s->ParseReceipt(shop->GetRec());
+	//shop->CloseRec();
+	s->PeriodInfo();
+
 	system("pause");
 	return 0;
 }
