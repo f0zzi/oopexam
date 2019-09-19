@@ -11,6 +11,23 @@
 using namespace std;
 
 static int dayMax[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+static string Date()
+{
+	string date;
+	time_t t = time(0);
+	tm now;
+	localtime_s(&now, &t);
+	date.append(to_string(now.tm_year + 1900));
+	date.append((to_string(now.tm_mon + 1).size() == 1 ? "0" + to_string(now.tm_mon + 1) : to_string(now.tm_mon + 1)));
+	date.append(to_string(now.tm_mday));
+	date.append(" ");
+	date.append((to_string(now.tm_hour).size() == 1 ? "0" + to_string(now.tm_hour) : to_string(now.tm_hour)));
+	date.append((to_string(now.tm_min).size() == 1 ? "0" + to_string(now.tm_min) : to_string(now.tm_min)));
+	date.append((to_string(now.tm_sec).size() == 1 ? "0" + to_string(now.tm_sec) : to_string(now.tm_sec)));
+	return date;
+}
+
 static string EnterDate()
 {
 	int year = 0, month = 0, day = 0;
@@ -18,9 +35,9 @@ static string EnterDate()
 	{
 		cout << "Enter year: ";
 		cin >> year;
-		if (year < 1)
+		if (year < 1 || year > stoi(Date().substr(0, 4)))
 			cout << "Invalid input. Try again." << endl;
-	} while (year < 1);
+	} while (year < 1 || year > stoi(Date().substr(0, 4)));
 	do
 	{
 		cout << "Enter month: ";
@@ -39,26 +56,15 @@ static string EnterDate()
 			cout << "Invalid input. Try again." << endl;
 	} while (day < 1 || day > dayM);
 	string result;
+	if (to_string(year).size() < 4)
+	{
+		for (size_t i = 0; i < 4 - to_string(year).size(); i++)
+			result.append("0");
+	}
 	result.append(to_string(year));
 	result.append(to_string(month).size() == 1 ? "0" + to_string(month) : to_string(month));
 	result.append(to_string(day).size() == 1 ? "0" + to_string(day) : to_string(day));
 	return result;
-}
-
-static string Date()
-{
-	string date;
-	time_t t = time(0);
-	tm now;
-	localtime_s(&now, &t);
-	date.append(to_string(now.tm_year + 1900));
-	date.append((to_string(now.tm_mon + 1).size() == 1 ? "0" + to_string(now.tm_mon + 1) : to_string(now.tm_mon + 1)));
-	date.append(to_string(now.tm_mday));
-	date.append(" ");
-	date.append((to_string(now.tm_hour).size() == 1 ? "0" + to_string(now.tm_hour) : to_string(now.tm_hour)));
-	date.append((to_string(now.tm_min).size() == 1 ? "0" + to_string(now.tm_min) : to_string(now.tm_min)));
-	date.append((to_string(now.tm_sec).size() == 1 ? "0" + to_string(now.tm_sec) : to_string(now.tm_sec)));
-	return date;
 }
 
 class Item
@@ -72,6 +78,13 @@ public:
 	Item() {}
 	Item(size_t code, string barcode, string name, double price, bool dividible) :
 		code(code), barcode(barcode), name(name), price(price), dividible(dividible) {}
+	void Info()
+	{
+		cout << setw(5) << "Code" << setw(15) << "Barcode" << setw(30) << "Name"
+			<< setw(10) << "Price" << setw(7) << "Div" << endl;
+		cout << setw(5) << GetCode() << setw(15) << GetBarcode() << setw(30) << GetName()
+			<< setw(10) << GetPrice() << setw(7) << GetDiv() << endl;
+	}
 	void SetCode(size_t code)
 	{
 		this->code = code;
@@ -327,7 +340,7 @@ public:
 		cout << "Enter name: ";
 		cin.get();
 		getline(cin, name);
-		cout << "Enter barcode (or 0): ";
+		cout << "Enter barcode (enter 0 if none): ";
 		cin >> barcode;
 		cout << "Enter price: ";
 		cin >> price;
@@ -338,6 +351,67 @@ public:
 		Item* tmp = new Item(code, barcode, name, price, dividible);
 		items_vector.push_back(tmp);
 		items.insert({ code, {tmp,quantity} });
+	}
+	void EditItem()
+	{
+		Item* tmp = GetItem();
+		string tmp_str;
+		double tmp_double = -1;
+		int selection = -1;
+		tmp->Info();
+		cout << "Remaining in storage: " << items[tmp->GetCode()].second << endl;
+		cout << "Edit: (1) Barcode  (2) Name  (3) Price  (4) Div type  (5) Quantity  (0) Exit" << endl;
+		cout << "Choose option: ";
+		cin >> selection;
+		switch (selection)
+		{
+		case 1:
+			cout << "Enter barcode: ";
+			cin >> tmp_str;
+			tmp->SetBarcode(tmp_str);
+			break;
+		case 2:
+			cout << "Enter name: ";
+			getline(cin, tmp_str);
+			tmp->SetName(tmp_str);
+			break;
+		case 3:
+			cout << "Enter price: ";
+			cin >> tmp_double;
+			tmp->SetPrice(tmp_double);
+			break;
+		case 4:
+			while (true)
+			{
+				cout << "Enter item type (if dividible - 1, if not - 0): ";
+				cin >> tmp_double;
+				if (tmp_double == 1 || tmp_double == 0)
+					break;
+				cout << "Invalid input. Try again." << endl;
+			}
+			tmp->SetDiv(tmp_double);
+			break;
+		case 5:
+			while (true)
+			{
+				cout << "Enter quantity: ";
+				cin >> tmp_double;
+				if (tmp_double < 0)
+					cout << "Error. Quantity must be bigger or equal zero." << endl;
+				else if (int(tmp->GetDiv()) < (tmp_double - int(tmp_double)))
+					cout << "Error. This item is not dividible." << endl;
+				else
+					break;
+			}
+			items[tmp->GetCode()].second = tmp_double;
+			break;
+		case 0:
+			cout << "Have a nice day" << endl;
+			break;
+		default:
+			cout << "Invalid input. Try again." << endl;
+			break;
+		}
 	}
 	void DeleteItem(size_t code = 0)
 	{
@@ -363,8 +437,8 @@ public:
 			for (auto el : rec->GetList())
 			{
 				items[el.first->GetCode()].second -= el.second;
-				out << Date() << "\t" << rec->GetNumber() << "\t" << el.first->GetCode() << "\t" 
-					<< el.first->GetPrice() << "\t"	<< -el.second << "\t" << el.first->GetName() << endl;
+				out << Date() << "\t" << rec->GetNumber() << "\t" << el.first->GetCode() << "\t"
+					<< el.first->GetPrice() << "\t" << -el.second << "\t" << el.first->GetName() << endl;
 			}
 		}
 		else
@@ -372,10 +446,12 @@ public:
 	}
 	void PeriodInfo()
 	{
-		map<string, int> income;
-		map<string, int> outcome;
+		map<string, double> income;
+		map<string, double> outcome;
 		int quantity = 0;
+		cout << "Enter period start date." << endl;
 		string start = EnterDate();
+		cout << "Enter period end date." << endl;
 		string end = EnterDate();
 		string tmp;
 		if (start > end)
@@ -393,47 +469,37 @@ public:
 			while (in.peek() != EOF)
 			{
 				in >> date;
-				cout << "date: " << date << endl;
+				if (date > end)
+					break;
 				if (date >= start)
 				{
-					while (in.peek() != EOF && date <= end)
-					{
-						//тут треба знов ≥н >> дате п≥сл€ першого круга... ѕ≈–≈–ќЅ»“»!
-						//in >> tmp >> tmp >> tmp >> tmp >> tmp;
-						in >> tmp;
-						cout << "tmp: " << tmp << endl;
-						in >> tmp;
-						cout << "tmp: " << tmp << endl;
-						in >> tmp;
-						cout << "tmp: " << tmp << endl;
-						in >> tmp;
-						cout << "tmp: " << tmp << endl;
-						in >> tmp;
-						cout << "tmp: " << tmp << endl;
-						quantity = stoi(tmp);
-						getline(in, tmp);
-						cout << "tmp: " << tmp << endl;
-						if (quantity > 0)
-							income[tmp] += quantity;
-						else
-							outcome[tmp] += quantity;
-					}
+					in >> tmp >> tmp >> tmp >> tmp >> tmp;
+					in.get();
+					quantity = stoi(tmp);
+					getline(in, tmp);
+					if (quantity > 0)
+						income[tmp] += quantity;
+					else
+						outcome[tmp] += quantity;
 				}
 				else
-				{
 					getline(in, tmp);
-				}
-
 			}
-			//system("cls");
-			cout << "Period report (" << start.substr(0,4) << "-" << start.substr(4,2) << "-" << start.substr(6) << " : ";
-			cout << end.substr(0,4) << "-" << end.substr(4,2) << "-" << end.substr(6) << ")" << endl;
+			system("cls");
+			cout << "Storage period report (" << start.substr(0, 4) << "-" << start.substr(4, 2) << "-" << start.substr(6) << " : ";
+			cout << end.substr(0, 4) << "-" << end.substr(4, 2) << "-" << end.substr(6) << ")" << endl;
 			cout << "Income:" << endl;
-			for (auto el : income)
-				cout << setw(5) << el.second << "\t" << el.second << endl;
+			if (income.size() > 0)
+				for (auto el : income)
+					cout << setw(5) << el.second << "\t" << el.first << endl;
+			else
+				cout << " - " << endl;
 			cout << "Outcome:" << endl;
-			for (auto el : outcome)
-				cout << setw(5) << el.second << "\t" << el.second << endl;
+			if (outcome.size() > 0)
+				for (auto el : outcome)
+					cout << setw(5) << el.second << "\t" << el.first << endl;
+			else
+				cout << " - " << endl;
 		}
 	}
 	~Storage()
@@ -454,7 +520,6 @@ private:
 		{
 			getline(in, shopName);
 			in >> lastReceipt;
-			in >> Zreport;
 		}
 		else
 		{
@@ -466,7 +531,7 @@ private:
 			getline(cin, name);
 			cout << "Location: ";
 			getline(cin, location);
-			shopName = owner + "\n" + name + "\n" + location;
+			shopName = owner + " :: " + name + " :: " + location;
 			ofstream out("shop.txt");
 			if (out.is_open())
 			{
@@ -480,17 +545,18 @@ private:
 	static Shop* instance;
 	string shopName = "";
 	size_t lastReceipt = 0;
-	double revenue = 0; //виручка
-	size_t receiptCounter = 0; //к-ть чек≥в за день
-	size_t Zreport = 0;
+	Storage* storage = nullptr;
 	Receipt* receipt = nullptr;
-	//Storage* storage = Storage::GetInstance();
 public:
 	static Shop* GetInstance()
 	{
 		if (instance == nullptr)
 			instance = new Shop();
 		return instance;
+	}
+	void SetStorage(Storage* storage)
+	{
+		this->storage = storage;
 	}
 	void OpenFiscalRec()
 	{
@@ -513,9 +579,10 @@ public:
 			if (!receipt->isEmpty())
 			{
 				receipt->Pay();
+				storage->ParseReceipt(receipt);
 				receipt = nullptr;
 				lastReceipt++;
-				receiptCounter++;
+				cout << "Receipt closed." << endl;
 			}
 			else
 				cerr << "Error. Receipt is empty. You can cancel empty receipt." << endl;
@@ -529,6 +596,7 @@ public:
 		{
 			delete receipt;
 			receipt = nullptr;
+			cout << "Receipt was canceled." << endl;
 		}
 	}
 	Receipt* GetRec()
@@ -537,7 +605,153 @@ public:
 	}
 	void XReport()
 	{
-		cout << "Revenue: " << revenue << "\t" << "Number of receipts: " << receiptCounter << endl;
+		PeriodInfo(Date().substr(0, 8));
+	}
+	void PeriodInfo(string date = "0")
+	{
+		double summ = 0;
+		string start, end;
+		if (date == "0")
+		{
+			cout << "Enter period start date." << endl;
+			start = EnterDate();
+			cout << "Enter period end date." << endl;
+			end = EnterDate();
+		}
+		else
+			start = end = date;
+		string tmp;
+		if (start > end)
+		{
+			tmp = start;
+			start = end;
+			end = tmp;
+		}
+		ifstream in("Receipts.txt");
+		if (!in.is_open())
+			cerr << "Error. Records file is unavailable." << endl;
+		else
+		{
+			while (in.peek() != EOF)
+			{
+				in >> date;
+				if (date > end)
+					break;
+				if (date >= start)
+				{
+					in >> tmp >> tmp >> tmp;
+					in.get();
+					summ += stoi(tmp);
+				}
+				else
+					getline(in, tmp);
+			}
+			system("cls");
+			cout << "Shop period report (" << start.substr(0, 4) << "-" << start.substr(4, 2) << "-" << start.substr(6) << " : ";
+			cout << end.substr(0, 4) << "-" << end.substr(4, 2) << "-" << end.substr(6) << ")" << endl;
+			cout << "Income: ";
+			if (summ > 0)
+				cout << summ << endl;
+			else
+				cout << " - " << endl;
+		}
+	}
+	void ReceiptManip()
+	{
+		int selection = -1;
+		double quantity = 0;
+		Item* tmp = nullptr;
+		while (receipt != nullptr)
+		{
+			system("cls");
+			cout << shopName << endl;
+			cout << endl;
+			receipt->Show();
+			cout << endl;
+			cout << "(1) Add item  (2) Add item by code  (3) Close  (4) Cancel" << endl;
+			cout << "Choose operation: ";
+			cin >> selection;
+			switch (selection)
+			{
+			case 1:
+				tmp = storage->GetItem();
+			case 2:
+				if (tmp == nullptr)
+					do
+					{
+						cout << "Enter item code: ";
+						cin >> selection;
+						tmp = storage->GetItem(selection);
+					} while (tmp == nullptr);
+					system("cls");
+					while (true)
+					{
+						tmp->Info();
+						cout << "Enter quantity: ";
+						cin >> quantity;
+						if (quantity <= 0)
+							cout << "Error. Quantity must be bigger then zero." << endl;
+						else if (int(tmp->GetDiv()) < (quantity - int(quantity)))
+							cout << "Error. This item is not dividible." << endl;
+						else
+							break;
+					}
+					receipt->AddItem(tmp, quantity);
+					tmp = nullptr;
+					break;
+			case 3:
+				CloseRec();
+				break;
+			case 4:
+				CancelRec();
+				break;
+			default:
+				cout << "Invalid input. Try again." << endl;
+				break;
+			}
+			system("pause");
+		}
+	}
+	void Interface()
+	{
+		int selection = -1;
+		while (selection != 0)
+		{
+			system("cls");
+			cout << shopName << endl;
+			cout << endl;
+			if (receipt != nullptr)
+				receipt->Show();
+			else
+				cout << "There is no open receipt found." << endl;
+			cout << endl;
+			cout << "(1) Fiscal receipt  (2) Return receipt  (3) X report  (4) Period report  (0) Exit" << endl;
+			cout << "Choose operation: ";
+			cin >> selection;
+			switch (selection)
+			{
+			case 1:
+				OpenFiscalRec();
+				ReceiptManip();
+				break;
+			case 2:
+				OpenReturnRec();
+				ReceiptManip();
+				break;
+			case 3:
+				XReport();
+				system("pause");
+				break;
+			case 0:
+				cout << "Have a nice day." << endl;
+				system("pause");
+				break;
+			default:
+				cout << "Invalid input. Try again." << endl;
+				system("pause");
+				break;
+			}
+		}
 	}
 };
 

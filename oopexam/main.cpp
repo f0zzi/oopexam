@@ -50,8 +50,12 @@ int main()
 	//shop->GetRec()->Show();
 	//s->ParseReceipt(shop->GetRec());
 	//shop->CloseRec();
-	s->PeriodInfo();
-
+	//s->PeriodInfo();
+	//shop->PeriodInfo();
+	//shop->XReport();
+	//shop->SetStorage(s);
+	//shop->Interface();
+	s->EditItem();
 	system("pause");
 	return 0;
 }
