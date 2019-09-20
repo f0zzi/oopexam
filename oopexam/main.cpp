@@ -9,57 +9,34 @@ int main()
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
 
-	Storage* s = Storage::GetInstance();
-	//cout << s->GetItem()->GetName() << endl;
-	//cout << Date() << endl;
-	//s->Load();
-	//s->DeleteItem(2);
-	//s->Save();
-
-	//time_t result = time(NULL);
-	//char str[26];
-	//ctime_s(str, sizeof str, &result);
-	//cout << str << endl;
-
-	/*time_t t = time(0);
-	tm now;
-	localtime_s(&now, &t);
-	cout << (now.tm_year + 1900) << '-' << (to_string(now.tm_mon + 1).size() == 1? "0" + to_string(now.tm_mon + 1):to_string(now.tm_mon + 1)) << '-' << now.tm_mday;*/
-	
-	//time_t t = time(0);
-	//tm now;
-	//localtime_s(&now, &t);
-	//cout << (now.tm_year + 1900) << '-' << (now.tm_mon + 1) << '-' << now.tm_mday;
-
-	//Receipt* r = new FiscalR(1);
-	//Receipt* r2 = new ReturnR(2);
-	//r->Show();
-
-	//cout << s->GetItem(1)->GetName() << endl;
-	//s->AddItem();
-	//s->Save();
-
+	Storage* storage = Storage::GetInstance();
 	Shop* shop = Shop::GetInstance();
-	//shop->OpenFiscalRec();
-	//shop->GetRec()->AddItem(s->GetItem(1), 1);
-	//shop->GetRec()->AddItem(s->GetItem(2), 2);
-	//shop->GetRec()->AddItem(s->GetItem(2), 0.6);
-	//shop->GetRec()->AddItem(s->GetItem(), 3);
-	//cout << shop->GetRec()->Total() << endl;
+	shop->SetStorage(storage);
+	int selection = -1;
+	while (selection != 0)
+	{
+		system("cls");
+		cout << R"(Welcome to "Shop assistant"(c) 0.013a)" << endl << endl;
+		cout << "(1) Shop  (2) Storage  (0) Exit" << endl;
+		cout << "Choose interface to work with: ";
+		cin >> selection;
+		switch (selection)
+		{
+		case 1:
+			shop->Interface();
+			break;
+		case 2:
+			storage->Interface();
+			break;
+		case 0:
+			cout << "Have a nice day." << endl;
+			break;
+		default:
+			cout << "Invalid input. Try again." << endl;
+			break;
+		}
+	}
 
-	//shop->GetRec()->Show();
-	//s->ParseReceipt(shop->GetRec());
-	//shop->CloseRec();
-	//s->PeriodInfo();
-	//shop->PeriodInfo();
-	//shop->XReport();
-	//shop->SetStorage(s);
-	//shop->Interface();
-	s->EditItem();
 	system("pause");
 	return 0;
 }
-//
-//time_t now = time(0);
-//tm ltm;
-//localtime_s(&ltm, &now);

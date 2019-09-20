@@ -83,7 +83,7 @@ public:
 		cout << setw(5) << "Code" << setw(15) << "Barcode" << setw(30) << "Name"
 			<< setw(10) << "Price" << setw(7) << "Div" << endl;
 		cout << setw(5) << GetCode() << setw(15) << GetBarcode() << setw(30) << GetName()
-			<< setw(10) << GetPrice() << setw(7) << GetDiv() << endl;
+			<< setw(10) << GetPrice() << setw(7) << boolalpha << GetDiv() << endl;
 	}
 	void SetCode(size_t code)
 	{
@@ -130,7 +130,7 @@ public:
 	{
 		list[item] += quantity;
 	}
-	void Show()
+	virtual void Show()
 	{
 		if (list.size() > 0)
 		{
@@ -177,12 +177,22 @@ class FiscalR : public Receipt
 {
 public:
 	FiscalR(size_t number) :Receipt(number) {}
+	void Show()
+	{
+		cout << "Receipt: " << number << "\tType: Fiscal Receipt" << endl << endl;
+		Receipt::Show();
+	}
 };
 
 class ReturnR : public Receipt
 {
 public:
 	ReturnR(size_t number) :Receipt(number) {}
+	void Show()
+	{
+		cout << "Receipt: " << number << "\tType: Return Receipt" << endl << endl;
+		Receipt::Show();
+	}
 	void AddItem(Item* item, double quantity)
 	{
 		list[item] -= quantity;
@@ -192,13 +202,13 @@ public:
 class Storage
 {
 private:
+	static Storage* instance;
+	map<size_t, pair<Item*, double>> items;
+	vector<Item*> items_vector;
 	Storage()
 	{
 		Load();
 	}
-	static Storage* instance;
-	map<size_t, pair<Item*, double>> items;
-	vector<Item*> items_vector;
 public:
 	void Highlight(bool state)
 	{
@@ -222,9 +232,7 @@ public:
 					Highlight(1);
 				cout << setw(5) << items_vector[i]->GetCode() << setw(15) << items_vector[i]->GetBarcode()
 					<< setw(30) << items_vector[i]->GetName() << setw(10) << items_vector[i]->GetPrice()
-					<< setw(7) << items_vector[i]->GetDiv() << setw(10) << items[items_vector[i]->GetCode()].second << endl;
-				//cout << endl;
-				//cout << __FUNCTION__ << endl;
+					<< setw(7) << boolalpha << items_vector[i]->GetDiv() << setw(10) << items[items_vector[i]->GetCode()].second << endl;
 				Highlight(0);
 			}
 		}
@@ -286,7 +294,7 @@ public:
 			double price = 0;
 			bool dividible = false;
 			size_t quantity;
-			while (in.peek() != EOF/*cin.fail()*//*!cin.eof()*/)
+			while (in.peek() != EOF)
 			{
 				in >> code >> barcode;
 				in.get();
@@ -295,6 +303,7 @@ public:
 				Item* tmp = new Item(code, barcode, name, price, dividible);
 				items_vector.push_back(tmp);
 				items.insert({ code, { tmp,quantity } });
+				in.get();
 			}
 		}
 	}
@@ -329,28 +338,64 @@ public:
 		string name = "";
 		double price = 0;
 		bool dividible = false;
-		size_t quantity;
-		cout << "Enter code: ";
-		cin >> code;
-		if (items.find(code) != items.end())
+		double quantity;
+		while (true)
 		{
-			cerr << "Error. Code is already used." << endl;
-			return;
+			cout << "Enter code: ";
+			cin >> code;
+			if (items.find(code) != items.end())
+				cerr << "Error. Code is already used." << endl;
+			else
+				break;
 		}
 		cout << "Enter name: ";
 		cin.get();
 		getline(cin, name);
-		cout << "Enter barcode (enter 0 if none): ";
-		cin >> barcode;
+		while (true)
+		{
+			cout << "Enter barcode (enter 0 if none): ";
+			cin >> barcode;
+			if (barcode.find_first_not_of("0123456789") != string::npos)
+				cout << "Error. Only digits allowed." << endl;
+			else
+				break;
+		}
 		cout << "Enter price: ";
 		cin >> price;
-		cout << "Dividible (1/0): ";
+		cout << "Dividible (1 - if dividible, 0 - if not): ";
 		cin >> dividible;
-		cout << "Enter quantity: ";
-		cin >> quantity;
+		while (true)
+		{
+			cout << "Enter quantity: ";
+			cin >> quantity;
+			if (quantity <= 0)
+				cout << "Error. Quantity must be bigger then zero." << endl;
+			else if (int(dividible) < (quantity - int(quantity)))
+				cout << "Error. This item is not dividible." << endl;
+			else
+				break;
+		}
 		Item* tmp = new Item(code, barcode, name, price, dividible);
 		items_vector.push_back(tmp);
 		items.insert({ code, {tmp,quantity} });
+		Save();
+	}
+	void OrderItem(Item* item)
+	{
+		double quantity;
+		while (true)
+		{
+			cout << "Enter quantity: ";
+			cin >> quantity;
+			if (quantity <= 0)
+				cout << "Error. Quantity must be bigger then zero." << endl;
+			else if (int(item->GetDiv()) < (quantity - int(quantity)))
+				cout << "Error. This item is not dividible." << endl;
+			else
+				break;
+		}
+		StorageLog("order", item, quantity);
+		items[item->GetCode()].second += quantity;
 	}
 	void EditItem()
 	{
@@ -358,60 +403,66 @@ public:
 		string tmp_str;
 		double tmp_double = -1;
 		int selection = -1;
-		tmp->Info();
-		cout << "Remaining in storage: " << items[tmp->GetCode()].second << endl;
-		cout << "Edit: (1) Barcode  (2) Name  (3) Price  (4) Div type  (5) Quantity  (0) Exit" << endl;
-		cout << "Choose option: ";
-		cin >> selection;
-		switch (selection)
+		while (selection != 0)
 		{
-		case 1:
-			cout << "Enter barcode: ";
-			cin >> tmp_str;
-			tmp->SetBarcode(tmp_str);
-			break;
-		case 2:
-			cout << "Enter name: ";
-			getline(cin, tmp_str);
-			tmp->SetName(tmp_str);
-			break;
-		case 3:
-			cout << "Enter price: ";
-			cin >> tmp_double;
-			tmp->SetPrice(tmp_double);
-			break;
-		case 4:
-			while (true)
+			system("cls");
+			tmp->Info();
+			cout << "Remaining in storage: " << items[tmp->GetCode()].second << endl;
+			cout << "Edit: (1) Barcode  (2) Name  (3) Price  (4) Div type  (5) Quantity  (0) Exit" << endl;
+			cout << "Choose option: ";
+			cin >> selection;
+			switch (selection)
 			{
-				cout << "Enter item type (if dividible - 1, if not - 0): ";
+			case 1:
+				cout << "Enter barcode: ";
+				cin >> tmp_str;
+				tmp->SetBarcode(tmp_str);
+				break;
+			case 2:
+				cout << "Enter name: ";
+				cin.get();
+				getline(cin, tmp_str);
+				tmp->SetName(tmp_str);
+				break;
+			case 3:
+				cout << "Enter price: ";
 				cin >> tmp_double;
-				if (tmp_double == 1 || tmp_double == 0)
-					break;
+				tmp->SetPrice(tmp_double);
+				break;
+			case 4:
+				while (true)
+				{
+					cout << "Enter item type (if dividible - 1, if not - 0): ";
+					cin >> tmp_double;
+					if (tmp_double == 1 || tmp_double == 0)
+						break;
+					cout << "Invalid input. Try again." << endl;
+				}
+				tmp->SetDiv(tmp_double);
+				break;
+			case 5:
+				while (true)
+				{
+					cout << "Enter quantity: ";
+					cin >> tmp_double;
+					if (tmp_double < 0)
+						cout << "Error. Quantity must be bigger or equal zero." << endl;
+					else if (int(tmp->GetDiv()) < (tmp_double - int(tmp_double)))
+						cout << "Error. This item is not dividible." << endl;
+					else
+						break;
+				}
+				StorageLog("edit", tmp, tmp_double - items[tmp->GetCode()].second);
+				items[tmp->GetCode()].second = tmp_double;
+				break;
+			case 0:
+				break;
+			default:
 				cout << "Invalid input. Try again." << endl;
+				break;
 			}
-			tmp->SetDiv(tmp_double);
-			break;
-		case 5:
-			while (true)
-			{
-				cout << "Enter quantity: ";
-				cin >> tmp_double;
-				if (tmp_double < 0)
-					cout << "Error. Quantity must be bigger or equal zero." << endl;
-				else if (int(tmp->GetDiv()) < (tmp_double - int(tmp_double)))
-					cout << "Error. This item is not dividible." << endl;
-				else
-					break;
-			}
-			items[tmp->GetCode()].second = tmp_double;
-			break;
-		case 0:
-			cout << "Have a nice day" << endl;
-			break;
-		default:
-			cout << "Invalid input. Try again." << endl;
-			break;
 		}
+		Save();
 	}
 	void DeleteItem(size_t code = 0)
 	{
@@ -428,6 +479,7 @@ public:
 		}
 		else
 			cerr << "Error. No such code." << endl;
+		Save();
 	}
 	void ParseReceipt(Receipt* rec)
 	{
@@ -440,6 +492,18 @@ public:
 				out << Date() << "\t" << rec->GetNumber() << "\t" << el.first->GetCode() << "\t"
 					<< el.first->GetPrice() << "\t" << -el.second << "\t" << el.first->GetName() << endl;
 			}
+			Save();
+		}
+		else
+			cerr << "Error writing 'Storage_movement.txt'. Please contact your tech support." << endl;
+	}
+	void StorageLog(string owner, Item* item, int quantity)
+	{
+		ofstream out("Storage_movement.txt", ios::app);
+		if (out.is_open())
+		{
+			out << Date() << "\t" << owner << "\t" << item->GetCode() << "\t"
+				<< item->GetPrice() << "\t" << quantity << "\t" << item->GetName() << endl;
 		}
 		else
 			cerr << "Error writing 'Storage_movement.txt'. Please contact your tech support." << endl;
@@ -491,20 +555,61 @@ public:
 			cout << "Income:" << endl;
 			if (income.size() > 0)
 				for (auto el : income)
-					cout << setw(5) << el.second << "\t" << el.first << endl;
+					cout << setw(10) << el.second << "\t" << el.first << endl;
 			else
 				cout << " - " << endl;
 			cout << "Outcome:" << endl;
 			if (outcome.size() > 0)
 				for (auto el : outcome)
-					cout << setw(5) << el.second << "\t" << el.first << endl;
+					cout << setw(10) << el.second << "\t" << el.first << endl;
 			else
 				cout << " - " << endl;
 		}
 	}
-	~Storage()
+	void Interface()
 	{
-		Save();
+		int selection = -1;
+		while (selection != 0)
+		{
+			system("cls");
+			cout << "Items in storage:" << endl;
+			Print();
+			cout << endl;
+			cout << "Storage main menu:" << endl;
+			cout << "(1) Add item  (2) Delete item  (3) Edit item  (4) Order item  (5) Period report  (0) Exit" << endl;
+			cout << "Choose operation: ";
+			cin >> selection;
+			switch (selection)
+			{
+			case 1:
+				system("cls");
+				AddItem();
+				break;
+			case 2:
+				system("cls");
+				DeleteItem(GetItem()->GetCode());
+				break;
+			case 3:
+				system("cls");
+				EditItem();
+				break;
+			case 4:
+				system("cls");
+				OrderItem(GetItem());
+				break;
+			case 5:
+				system("cls");
+				PeriodInfo();
+				break;
+			case 0:
+				cout << "Have a nice day." << endl;
+				break;
+			default:
+				cout << "Invalid input. Try again." << endl;
+				break;
+			}
+			system("pause");
+		}
 	}
 };
 
@@ -513,6 +618,11 @@ Storage* Storage::instance = nullptr;
 class Shop
 {
 private:
+	static Shop* instance;
+	string shopName = "";
+	size_t lastReceipt = 0;
+	Storage* storage = nullptr;
+	Receipt* receipt = nullptr;
 	Shop()
 	{
 		ifstream in("shop.txt");
@@ -542,11 +652,6 @@ private:
 				cerr << "Error writing 'shop.txt'. Please contact your tech support." << endl;
 		}
 	}
-	static Shop* instance;
-	string shopName = "";
-	size_t lastReceipt = 0;
-	Storage* storage = nullptr;
-	Receipt* receipt = nullptr;
 public:
 	static Shop* GetInstance()
 	{
@@ -583,6 +688,12 @@ public:
 				receipt = nullptr;
 				lastReceipt++;
 				cout << "Receipt closed." << endl;
+				ofstream out("shop.txt", ios::in | ios::out);
+				if (out.is_open())
+				{
+					out.seekp(shopName.size() + 1);
+					out << lastReceipt;
+				}
 			}
 			else
 				cerr << "Error. Receipt is empty. You can cancel empty receipt." << endl;
@@ -718,13 +829,7 @@ public:
 		while (selection != 0)
 		{
 			system("cls");
-			cout << shopName << endl;
-			cout << endl;
-			if (receipt != nullptr)
-				receipt->Show();
-			else
-				cout << "There is no open receipt found." << endl;
-			cout << endl;
+			cout << shopName << endl << endl;
 			cout << "(1) Fiscal receipt  (2) Return receipt  (3) X report  (4) Period report  (0) Exit" << endl;
 			cout << "Choose operation: ";
 			cin >> selection;
